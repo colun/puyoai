@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <random>
+#include <tuple>
 
 #include "base/base.h"
 #include "core/plan/plan.h"
@@ -63,7 +64,8 @@ public:
             {
                 //simulation
                 std::vector<int> bestGenom;
-                std::pair<int, std::pair<int, int> > bestSc(-100, std::pair<int, int>(0, 0));
+                typedef std::tuple<int, int, int, int, int> TySc;
+                TySc bestSc(-100, 0, 0, 0, 0);
                 for(int tryCount=0; tryCount<200; ++tryCount) {
                     std::vector<int> genom;//(bestGenom.begin(), bestGenom.begin() + myRandInt(bestGenom.size()));
                     CoreField f2 = f;
@@ -71,9 +73,18 @@ public:
                     int maxChain = 0;
                     int mSc = 0;
                     int ff = 0;
+                    int maxChainTurn = 0;
+                    int maxChainHeightDiff = 0;
                     bool dead = false;
                     for(int i=0; i<(int)genom.size(); ++i) {
                         auto & de = DECISIONS[genom[i]];
+                        int maxHeight = f2.height(1);
+                        int minHeight = maxHeight;
+                        for(int j=2; j<=6; ++j) {
+                        	int h = f2.height(j);
+                        	maxHeight = std::max(maxHeight, h);
+                        	minHeight = std::min(minHeight, h);
+                        }
                         int dropFrames = f2.framesToDropNext(de);
                         f2.dropKumipuyo(de, simSeq.get(i));
                         const auto & re = f2.simulate();
@@ -84,7 +95,12 @@ public:
                         bool zenkeshi = (f2.isZenkeshi() && i<seq.size());
                         sc += re.score;
                         ff += dropFrames + re.frames;
-                        maxChain = std::max(maxChain, re.chains + (zenkeshi ? 3 : 0));
+                        int newMaxChain = re.chains + (zenkeshi ? 3 : 0);
+                        if(maxChain < newMaxChain) {
+                        	maxChain = newMaxChain;
+                        	maxChainTurn = i;
+                        	maxChainHeightDiff = maxHeight - minHeight;
+                        }
                         mSc = std::max(mSc, re.score);
                     }
                     if(dead) {
@@ -116,6 +132,13 @@ public:
                             if(!PuyoController::isReachable(f2, de)) {
                                 continue;
                             }
+                            int maxHeight = f2.height(1);
+                            int minHeight = maxHeight;
+                            for(int j=2; j<=6; ++j) {
+                            	int h = f2.height(j);
+                            	maxHeight = std::max(maxHeight, h);
+                            	minHeight = std::min(minHeight, h);
+                            }
                             int dropFrames = f2.framesToDropNext(de);
                             if(!f2.dropKumipuyo(de, simSeq.get(genom.size()))) {
                                 dead = true;
@@ -129,7 +152,12 @@ public:
                             sc += re.score;
                             ff += dropFrames + re.frames;
                             bool zenkeshi = (f2.isZenkeshi() && (int)genom.size()<seq.size());
-                            maxChain = std::max(maxChain, re.chains + (zenkeshi ? 3 : 0));
+                            int newMaxChain = re.chains + (zenkeshi ? 3 : 0);
+                            if(maxChain < newMaxChain) {
+                            	maxChain = newMaxChain;
+                            	maxChainTurn = genom.size();
+                            	maxChainHeightDiff = maxHeight - minHeight;
+                            }
                             mSc = std::max(mSc, re.score);
                             genom.push_back(v);
                             break;
@@ -141,7 +169,7 @@ public:
                     if(dead) {
                         continue;
                     }
-                    std::pair<int, std::pair<int, int> > sc2(maxChain<3 ? -10+maxChain : maxChain, std::pair<int, int>(mSc, -sc));
+                    TySc sc2(maxChain<3 ? -10+maxChain : maxChain, 0, -maxChainHeightDiff, mSc, -sc);
                     if(bestSc<sc2) {
                         bestSc = sc2;
                         bestGenom = genom;
