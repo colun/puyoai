@@ -8,4 +8,5 @@ function(colun_add_executable exe)
 endfunction()
 
 colun_add_executable(mc_simple mc_simple.cc)
+colun_add_executable(mc_simple2 mc_simple2.cc)
 colun_add_executable(mc_beam mc_beam.cc)
