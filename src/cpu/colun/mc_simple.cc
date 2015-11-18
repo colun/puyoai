@@ -74,6 +74,7 @@ public:
                     int mSc = 0;
                     int ff = 0;
                     int maxChainTurn = 0;
+                    UNUSED_VARIABLE(maxChainTurn);
                     int maxChainHeightDiff = 0;
                     bool dead = false;
                     for(int i=0; i<(int)genom.size(); ++i) {
@@ -169,7 +170,7 @@ public:
                     if(dead) {
                         continue;
                     }
-                    TySc sc2(maxChain<3 ? -10+maxChain : maxChain, 0, -maxChainHeightDiff, mSc, -sc);
+                    TySc sc2((1<=maxChain && maxChain<3) ? -10+maxChain : maxChain, 0, -maxChainHeightDiff, mSc, -sc);
                     if(bestSc<sc2) {
                         bestSc = sc2;
                         bestGenom = genom;

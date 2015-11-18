@@ -7,7 +7,5 @@ function(colun_add_executable exe)
   cpu_target_link_common_libraries(${exe})
 endfunction()
 
-cpu_add_runner(run.sh)
-
-colun_add_executable(colun main.cc)
-
+colun_add_executable(mc_simple mc_simple.cc)
+colun_add_executable(mc_beam mc_beam.cc)
