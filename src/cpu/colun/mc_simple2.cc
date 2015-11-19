@@ -144,8 +144,8 @@ public:
             {
                 //simulation
                 std::vector<int> bestGenom;
-                typedef std::tuple<int, int, int, int, int, int, int, int, int, int, int, int> TySc;
-                TySc bestSc(-1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                typedef std::tuple<int, int, int, int, int, int, int, int, int, int, int, int, int, int> TySc;
+                TySc bestSc(-1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                 for(int tryCount=0; tryCount<200; ++tryCount) {
                     std::vector<int> genom;//(bestGenom.begin(), bestGenom.begin() + myRandInt(bestGenom.size()));
                     CoreField f2 = f;
@@ -165,15 +165,24 @@ public:
                     int maxChainAfterFrame = 0;
                     int maxChainFirstVanishHeight = 0;
                     int maxChainLowPosBonus = 0;
+                    int maxChainBalance = 0;
                     bool dead = false;
                     for(int i=0; i<(int)genom.size(); ++i) {
                         auto & de = DECISIONS[genom[i]];
                         int maxHeight = f2.height(1);
                         int minHeight = maxHeight;
+                        int goodBalance[] = { 0, 2, 0, -2, -2, 0, 2, 0};
+                        int sumHeight = maxHeight - goodBalance[1];
                         for(int j=2; j<=6; ++j) {
                         	int h = f2.height(j);
                         	maxHeight = std::max(maxHeight, h);
                         	minHeight = std::min(minHeight, h);
+                        	sumHeight += h - goodBalance[j];
+                        }
+                        int balance = 0;
+                        for(int j=1; j<=6; ++j) {
+                        	int h = f2.height(j);
+                        	balance += std::abs((h-goodBalance[j])*6-sumHeight);
                         }
                         int dropFrames = f2.framesToDropNext(de);
                         f2.dropKumipuyo(de, simSeq.get(i));
@@ -203,6 +212,7 @@ public:
                         	maxChainAfterFrame = ff;
                         	maxChainFirstVanishHeight = tracker.getFirstVanishHeight();
                         	maxChainLowPosBonus = tracker.getLowPosBonus();
+                        	maxChainBalance = balance;
                         }
                         mSc = std::max(mSc, re.score);
                     }
@@ -237,10 +247,18 @@ public:
                             }
                             int maxHeight = f2.height(1);
                             int minHeight = maxHeight;
+                            int goodBalance[] = { 0, 2, 0, -2, -2, 0, 2, 0};
+                            int sumHeight = maxHeight - goodBalance[1];
                             for(int j=2; j<=6; ++j) {
                             	int h = f2.height(j);
                             	maxHeight = std::max(maxHeight, h);
                             	minHeight = std::min(minHeight, h);
+                            	sumHeight += h - goodBalance[j];
+                            }
+                            int balance = 0;
+                            for(int j=1; j<=6; ++j) {
+                            	int h = f2.height(j);
+                            	balance += std::abs((h-goodBalance[j])*6-sumHeight);
                             }
                             int dropFrames = f2.framesToDropNext(de);
                             if(!f2.dropKumipuyo(de, simSeq.get(genom.size()))) {
@@ -273,6 +291,7 @@ public:
                             	maxChainAfterFrame = ff;
                             	maxChainFirstVanishHeight = tracker.getFirstVanishHeight();
                             	maxChainLowPosBonus = tracker.getLowPosBonus();
+                            	maxChainBalance = balance;
                             }
                             mSc = std::max(mSc, re.score);
                             genom.push_back(v);
@@ -286,8 +305,10 @@ public:
                         continue;
                     }
                     TySc sc2(
-                    		(maxChainTurn==0 ? maxChain-1 : maxChain) * 4 + maxChainFirstVanishHeight
+                    		(maxChainTurn==0 ? maxChain-1 : maxChain) * 1000 - maxChainBalance * 10 + maxChainFirstVanishHeight * 250
                     		, maxChainTurn==0 ? -1000 : 0
+							, 0
+                    		, 0
 							, maxChainLowPosBonus
 							, -maxChainMudaVanishSum
 							, -maxChainMudaSum
@@ -309,7 +330,7 @@ public:
                 }
             }
         }
-        //fprintf(stderr, "simCount: %d\n", simCount);
+        fprintf(stderr, "simCount: %d\n", simCount);
         int bestAns = 0;
         int bestCnt = 0;
         for(int i=0; i<22; ++i) {
